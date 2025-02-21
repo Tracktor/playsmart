@@ -179,7 +179,9 @@ class Playsmart:
         prompt = f"""Analyzing end-to-end test scenario (sync playwright in python):
 
 DOM Content:
+```html
 {self._page.content()}
+```
 
 Test Objective: {objective}
 """

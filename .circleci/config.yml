@@ -1,0 +1,82 @@
+version: 2.1
+
+orbs:
+  gh: circleci/github-cli@1.0
+  sre: tracktor/ci-tools@0.7.1
+
+references:
+  pypi_context: &pypi_context
+    - pypi
+    - github
+
+  filters_not_tagged: &filters_not_tagged
+    tags:
+      ignore: /.*/
+
+  filters_only_master: &filters_only_master
+    tags:
+      ignore: /.*/
+    branches:
+      only: /^master$/
+
+  filters_only_tags: &filters_only_tags
+    tags:
+      only: /.*/
+    branches:
+      ignore: /.*/
+
+
+executors:
+  test-3-12:
+    docker:
+      - image: cimg/python:3.12.1-node
+
+  build:
+    docker:
+      - image: cimg/python:3.12
+
+jobs:
+
+  run-tests-3-12:
+    executor: test-3-12
+    steps:
+      - checkout
+      - run:
+          name: Install nox, coverage
+          command: pip install nox coverage
+      - run:
+          name: Run pre-commit check
+          command: nox -s lint
+      - run:
+          name: Run tests
+          command: nox -s test-3.12
+      - run:
+          name: Coverage
+          command: python -m coverage combine && python -m coverage report --ignore-errors --show-missing --fail-under=77
+
+  publish:
+    executor: build
+    steps:
+      - checkout
+      - run:
+          name: Install build, twine
+          command: pip install build twine
+      - run:
+          name: Build package
+          command: python -m build
+      - run:
+          name: Publishing
+          command: twine upload -u __token__ -p $PYPI_TOKEN dist/*
+
+workflows:
+
+  run-tests:
+    jobs:
+      - run-tests-3-12:
+          filters: *filters_not_tagged
+
+  publish:
+    jobs:
+      - publish:
+          context: *pypi_context
+          filters: *filters_only_tags

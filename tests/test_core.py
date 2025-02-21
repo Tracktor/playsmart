@@ -123,3 +123,25 @@ def test_llm_went_south(openai_mock: OpenAIMock, playwright_page: MagicMock) -> 
         PlaysmartError, match="LLM seems to have responded with an unparsable content. Did it fail to follow instructions?"
     ):
         smart_playwright.want("Fill the email input with hello@example.tld", use_cache=False)
+
+
+@openai_mocker()
+def test_llm_bypass_markdown(openai_mock: OpenAIMock, playwright_page: MagicMock) -> None:
+    """We should not expect the LLM to perfectly follow orders. This case handle the LLM decide NOT TO USE markdown!"""
+
+    # we insert an unexpected mock response for OpenAI
+    openai_mock.chat.completions.create.response = {
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "stop",
+                "message": {"content": 'page.locator("[name=\'email\']").fill("hello@example.tld")', "role": "assistant"},
+            }
+        ]
+    }
+
+    smart_playwright = Playsmart(browser_tab=playwright_page, openai_key="sk-fake123", cache_path=".shouldnotexist")
+
+    res = smart_playwright.want("Fill the email input with hello@example.tld", use_cache=False)
+
+    assert len(res) == 1

@@ -1,6 +1,9 @@
 Playwright! Playsmart!
 ----------------------
 
+[![Downloads](https://img.shields.io/pypi/dm/playsmart.svg)](https://pypistats.org/packages/playsmart)
+[![Supported Versions](https://img.shields.io/pypi/pyversions/playsmart.svg)](https://pypi.org/project/playsmart)
+
 End the never ending game of having to manually record, inspect, and update your E2E tests with Playwright.
 
 This chunk of code[...]

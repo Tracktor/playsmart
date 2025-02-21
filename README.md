@@ -74,7 +74,10 @@ Did you get an error immediately?
 Request too large for gpt-4o in organization org-XlSkSlxsksdS on tokens per min (TPM): Limit 30000, Requested 67653.
 ```
 
-Ensure your OpenAI can accept higher limits! See https://platform.openai.com/docs/guides/rate-limits?context=tier-five to learn more.
+Ensure your OpenAI project can accept higher limits! See https://platform.openai.com/docs/guides/rate-limits?context=tier-five to learn more.
+
+Your DOM might be too large to be processed by our library. Usually it is because you embed large scripts in your DOM
+like when you use a development (webpack/vite live/dev render) server.
 
 ### Caching
 

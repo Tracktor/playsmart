@@ -25,10 +25,10 @@ WORLD_PROMPT: typing.Final[
 - Send me only the relevant code without text, comments or explanations
 - Consider we already have Playwright initialized
 - Use only the variable page to execute the following demand
-- consider you are already on the good page (no page.goto) dont no any import or close page or the browser at the end of the test
-- dont create any function or class, just a sequence of Playwright instructions
-- dont use Playwright method 'evaluate'
-- never use loops in code, always prefer multiple Playwright redundant calls
+- Consider you are already on the good page (no page.goto) dont no any import or close page or the browser at the end of the test
+- Dont create any function or class, just a sequence of Playwright instructions
+- Dont use Playwright method 'evaluate'
+- Never use loops in code, always prefer multiple Playwright redundant calls
 - If I ask to locate for a single field, use Playwright locate method call.
 - Otherwise if I ask for fields send me a list of them with their name, xpath, and type as json (in markdown) like given examples: {json.dumps(FIELDS)}
 """  # noqa: E501

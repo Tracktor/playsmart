@@ -179,7 +179,9 @@ class Playsmart:
         prompt = f"""Analyzing end-to-end test scenario (sync playwright in python):
 
 DOM Content:
+```html
 {self._page.content()}
+```
 
 Test Objective: {objective}
 """
@@ -235,14 +237,22 @@ Test Objective: {objective}
         response = self._prompt(objective, use_cache=use_cache)
 
         try:
-            code = extract_code_from_markdown(response)
+            # wierd LLM edge case where it can permit itself to avoid markdown
+            # heuristic, hello!
+            if "```" not in response and "page." in response:
+                code = response
+            else:
+                code = extract_code_from_markdown(response)
         except ValueError:
             logger.debug("the prompt may have returned a list of fields! attempt to extract a JSON payload[...]")
 
             try:
-                fields: list[FieldDict] = json.loads(
-                    extract_code_from_markdown(response, language="json"),
-                )
+                if "```" not in response and response.startswith("{"):
+                    fields: list[FieldDict] = json.loads(response)
+                else:
+                    fields = json.loads(
+                        extract_code_from_markdown(response, language="json"),
+                    )
             except ValueError as e:
                 raise PlaysmartError(
                     "LLM seems to have responded with an unparsable content. Did it fail to follow instructions?"

@@ -63,6 +63,16 @@ with smart_hub.context("docs page"):
     smart_hub.want("click on PEFT doc section")
 ```
 
+### OpenAI TPM Errors
+
+Did you get an error immediately?
+
+```
+Request too large for gpt-4o in organization org-XlSkSlxsksdS on tokens per min (TPM): Limit 30000, Requested 67653.
+```
+
+Ensure your OpenAI can accept higher limits! See https://platform.openai.com/docs/guides/rate-limits?context=tier-five to learn more.
+
 ### Caching
 
 We know how painful consuming needlessly tokens can be. That's why **Playsmart** have a tiny

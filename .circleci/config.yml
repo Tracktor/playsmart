@@ -32,6 +32,9 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Add git cli
+          command: apk add git
+      - run:
           name: Install nox, coverage
           command: pip install nox coverage
       - run:

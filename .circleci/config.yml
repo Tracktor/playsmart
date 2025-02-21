@@ -23,7 +23,7 @@ references:
 executors:
   py312:
     docker:
-      - image: python:3.12-alpine
+      - image: python:3.12
 
 jobs:
 
@@ -31,9 +31,6 @@ jobs:
     executor: py312
     steps:
       - checkout
-      - run:
-          name: Add git cli
-          command: apk add git
       - run:
           name: Install nox, coverage
           command: pip install nox coverage

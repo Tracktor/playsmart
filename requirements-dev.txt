@@ -1,0 +1,3 @@
+pytest>=2.8.0,<=8.3.4
+coverage>=7.2.7,<7.7
+openai-responses>=0.11,<0.12

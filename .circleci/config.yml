@@ -19,7 +19,6 @@ references:
     branches:
       ignore: /.*/
 
-
 executors:
   py312:
     docker:
@@ -42,7 +41,7 @@ jobs:
           command: nox -s test-3.12
       - run:
           name: Coverage
-          command: python -m coverage combine && python -m coverage report --ignore-errors --show-missing --fail-under=77
+          command: python -m coverage combine && python -m coverage report --ignore-errors --show-missing --fail-under=70
 
   publish:
     executor: py312

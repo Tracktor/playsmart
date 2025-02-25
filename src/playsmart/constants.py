@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import json
-import re
 import typing
 
 if typing.TYPE_CHECKING:
     from .structures import FieldDict
 
-#: This will be our way to determine if we've updated our application.
-EXTRACT_SCRIPT_SRC_DOM: re.Pattern[str] = re.compile(r"<script.*?src=\"(.*?)\"", re.IGNORECASE)
+DEFAULT_CACHE_PATH: typing.Final[str] = ".playsmart.cache"
 
 #: Just an opinionated format, it is simple enough for a LLM to understand its purpose.
 FIELDS: typing.Final[list[FieldDict]] = [

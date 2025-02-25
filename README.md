@@ -127,6 +127,17 @@ with smart_hub.context("dashboard"):
         ... # your logic for each 'input<text/select/...>'
 ```
 
+### Limitation
+
+The "big" caveat here, is that we purposely don't use anything else than DOM analysis.
+No computer vision will be used in this project. We saw that introducing it is nice but unfortunately
+introduce a lot of "flaky tests".
+
+This immediately prevent you from writing `smart_hub.want("ensure we are on the dashboard page")`.
+Most of the time you should write proper assertion yourself.
+
+The project does tremendously reduce the burden of maintaining E2E pipelines.
+
 ### Debug runtime
 
 If you are asking yourself "How did we arrive at that result?", use the handy function `context_debug`.

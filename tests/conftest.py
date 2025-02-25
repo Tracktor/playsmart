@@ -38,7 +38,7 @@ def cache_file() -> typing.Generator[str]:
                 {
                     "__version__": version,
                     "example.tld": {
-                        "app_fingerprint": "14b9fd56bc1c69fcff6c33bfe0048b9eded09c113f89a8d9d814b2a5ceb359d4",
+                        "app_fingerprint": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
                         "generic": {
                             "Fill the email input with hello@example.tld": "```python\n"
                             'page.locator("[name=\'email\']").fill("hello@example.tld")\n```'

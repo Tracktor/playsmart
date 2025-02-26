@@ -63,7 +63,7 @@ def test_caching_basic(openai_mock: OpenAIMock, playwright_page: MagicMock) -> N
     smart_playwright = Playsmart(browser_tab=playwright_page, openai_key="sk-fake123", cache_path=".shouldexistafter")
 
     # the fingerprint is computed using relative scripts src
-    assert smart_playwright._app_fingerprint() == hashlib.sha256(b"/assets/index.KodKi87.js", usedforsecurity=False).hexdigest()
+    assert smart_playwright._fingerprint == hashlib.sha256(b"", usedforsecurity=False).hexdigest()
 
     # the cache object is lazily created, after first prompt
     assert smart_playwright._cache is None

@@ -4,18 +4,16 @@ import hashlib
 import json
 import logging
 import os.path
-import re
 import typing
 from contextlib import contextmanager
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
-from openai import OpenAI, OpenAIError
-
-if typing.TYPE_CHECKING:
-    from playwright.sync_api import Locator, Page
+from openai import DefaultHttpxClient, OpenAI, OpenAIError
+from playwright.sync_api import Error as PlaywrightError
+from playwright.sync_api import Locator, Page
 
 from ._version import version
-from .constants import EXTRACT_SCRIPT_SRC_DOM, WORLD_PROMPT
+from .constants import DEFAULT_CACHE_PATH, WORLD_PROMPT
 from .exceptions import PlaysmartError
 from .structures import CacheObject, FieldDict
 from .utils import extract_code_from_markdown, extract_playwright_instruction
@@ -57,7 +55,8 @@ class Playsmart:
     def __init__(
         self,
         browser_tab: Page,
-        cache_path: str | None = None,
+        cache_path: str | None = DEFAULT_CACHE_PATH,
+        *,
         openai_key: str | None = None,
         openai_organization: str | None = None,
         openai_project: str | None = None,
@@ -70,11 +69,13 @@ class Playsmart:
         )
         self._openai_model = openai_model
         self._page = browser_tab
-        self._cache_path: str | None = cache_path or ".playsmart.cache"
+        self._cache_path: str | None = cache_path
         #: each hostname has a CacheObject tied to him.
         self._cache: dict[str, CacheObject] | None = None
+        # used to store latest computed fingerprints (live run)
+        self._fingerprints: dict[str, str] = {}
 
-        if os.path.exists(self._cache_path):
+        if self._cache_path is not None and os.path.exists(self._cache_path):
             try:
                 with open(self._cache_path) as fp:
                     self._cache = json.load(fp)
@@ -105,7 +106,49 @@ class Playsmart:
         finally:
             self._cursor = None
 
-    def _app_fingerprint(self) -> str:
+    @property
+    def url(self) -> str:
+        return self._page.url
+
+    @property
+    def host(self) -> str:
+        return urlparse(self.url).netloc
+
+    @property
+    def _sources(self) -> list[str]:
+        """Retrieve a list of sources used by the current page.
+
+        It includes scripts, styles and link modulepreload.
+        Prefer local hosted. Fallback on everything.
+        """
+        current_url = self.url
+        current_host = self.host
+
+        local_sources = set()
+        sources = set()
+
+        for locator in (
+            self._page.locator("script").all()
+            + self._page.locator("style").all()
+            + self._page.locator("link[rel=modulepreload]").all()
+        ):
+            resource_src = locator.get_attribute("src") or locator.get_attribute("href")
+
+            if resource_src is None:
+                continue
+
+            if not resource_src.lower().startswith("http"):
+                resource_src = urljoin(current_url, resource_src)
+
+            sources.add(resource_src)
+
+            if current_host in resource_src:
+                local_sources.add(resource_src)
+
+        return sorted(list(local_sources or sources))
+
+    @property
+    def _fingerprint(self) -> str:
         """(Incomplete/Not generic) Generate a unique application fingerprint.
 
         Modern frontend library (React) or framework (Vue) use tool like Vite or
@@ -118,24 +161,33 @@ class Playsmart:
         This method is likely to be useless in case of A) no JS used B) JS but no versioning
         C) Using WebAssembly / and so on! We'll need to be smarter!
         """
-        scripts = re.findall(EXTRACT_SCRIPT_SRC_DOM, self._page.content())
-        local_scripts = [s for s in scripts if s.startswith("/")]
+        if self.host in self._fingerprints:
+            return self._fingerprints[self.host]
 
-        return hashlib.sha256(
-            "||".join(local_scripts if local_scripts else scripts).encode(),
+        resources = []
+
+        with DefaultHttpxClient() as client:
+            for source in self._sources:
+                try:
+                    resources.append(client.get(source).raise_for_status().content)
+                except Exception:
+                    continue
+
+        self._fingerprints[self.host] = hashlib.sha256(
+            b"".join(resources),
             usedforsecurity=False,
         ).hexdigest()
 
-    def _prompt(self, objective: str, use_cache: bool = True) -> str:
+        return self._fingerprints[self.host]
+
+    def _prompt(self, objective: str, use_cache: bool = True, invalid_cache: bool = False) -> str:
         """Host the logic for asking OpenAI LLM to resolve a single objective.
 
         This method SHOULD NEVER be called directly. It has also the caching
         logic inside. It returns the LLM raw response. Unparsed.
         """
-        app_host = urlparse(self._page.url).hostname
-        assert app_host is not None
-
-        app_fingerprint = self._app_fingerprint()
+        app_host = self.host
+        app_fingerprint = self._fingerprint
 
         if self._cache is not None:
             if app_host not in self._cache:
@@ -143,7 +195,7 @@ class Playsmart:
             else:
                 # verify we're still using the same (frontend) version as before!
                 if app_fingerprint == self._cache[app_host]["app_fingerprint"]:
-                    if use_cache:
+                    if use_cache and not invalid_cache:
                         if self._cursor is None:
                             if objective in self._cache[app_host]["generic"]:
                                 return self._cache[app_host]["generic"][objective]
@@ -221,7 +273,9 @@ Test Objective: {objective}
 
         return prompt_response
 
-    def want(self, objective: str, use_cache: bool = True) -> list[Locator]:
+    def want(
+        self, objective: str, use_cache: bool = True, *, retries: int | None = 3, __retrying: bool = False
+    ) -> list[Locator]:
         """The most useful entrypoint. The Playwright prompt! You may order to take action or query elements.
 
         There's two category of actions you may want to take:
@@ -234,7 +288,7 @@ Test Objective: {objective}
         If you, for example, want to list every field in the present page
         In that case, the method will return a list of "Locator".
         """
-        response = self._prompt(objective, use_cache=use_cache)
+        response = self._prompt(objective, use_cache=use_cache, invalid_cache=__retrying)
 
         try:
             # wierd LLM edge case where it can permit itself to avoid markdown
@@ -284,6 +338,14 @@ Test Objective: {objective}
 
                     res = getattr(root_callable, method)(*args)
 
+                    #: on ambiguous selectors, take first.
+                    if hasattr(res, "count"):
+                        # the isinstance is weird but needed
+                        # case: MagicMock always return something!
+                        if isinstance(res.count(), int) and res.count() > 1:
+                            logger.debug("the selector ended selecting multiple element! fallback on first item.")
+                            res = res.first
+
                     if res is not None:
                         if hasattr(res, "page"):
                             logger.debug("method returned a Locator, appending to results!")
@@ -292,5 +354,13 @@ Test Objective: {objective}
                             logger.debug(f"method returned something, but discarded: {res}")
                 except TypeError:
                     raise PlaysmartError(f"LLM probably hallucinated. Method '{method}' cannot accept given arguments: {args}")
+                except PlaywrightError as e:
+                    if "Unexpected token" in str(e) and retries is not None and retries > 0:
+                        logger.warning(
+                            "LLM failed to produce a valid Playwright selector. "
+                            f"Retrying! {retries - 1} retry left. Reason: {e}"
+                        )
+                        return self.want(objective, use_cache=use_cache, retries=retries - 1, __retrying=True)  # type: ignore[call-arg]
+                    raise PlaysmartError(f"LLM failed to produce a valid Playwright selector. reason: {e}") from e
 
             return returns

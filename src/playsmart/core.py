@@ -293,7 +293,7 @@ Test Objective: {objective}
         return prompt_response
 
     def want(
-        self, objective: str, use_cache: bool = True, *, retries: int | None = 3, __retrying: bool = False
+        self, objective: str, use_cache: bool = True, *, retries: int | None = 3, _retrying: bool = False
     ) -> list[Locator]:
         """The most useful entrypoint. The Playwright prompt! You may order to take action or query elements.
 
@@ -307,7 +307,7 @@ Test Objective: {objective}
         If you, for example, want to list every field in the present page
         In that case, the method will return a list of "Locator".
         """
-        response = self._prompt(objective, use_cache=use_cache, invalid_cache=__retrying)
+        response = self._prompt(objective, use_cache=use_cache, invalid_cache=_retrying)
 
         try:
             # wierd LLM edge case where it can permit itself to avoid markdown
@@ -327,6 +327,12 @@ Test Objective: {objective}
                         extract_code_from_markdown(response, language="json"),
                     )
             except ValueError as e:
+                if retries is not None and retries > 0:
+                    logger.warning(
+                        "LLM seems to have responded with an unparsable content. "
+                        f"Retrying! {retries - 1} retry left. Reason: {e}"
+                    )
+                    return self.want(objective, use_cache=use_cache, retries=retries - 1, _retrying=True)  # type: ignore[call-arg]
                 raise PlaysmartError(
                     "LLM seems to have responded with an unparsable content. Did it fail to follow instructions?"
                 ) from e
@@ -379,7 +385,7 @@ Test Objective: {objective}
                             "LLM failed to produce a valid Playwright selector. "
                             f"Retrying! {retries - 1} retry left. Reason: {e}"
                         )
-                        return self.want(objective, use_cache=use_cache, retries=retries - 1, __retrying=True)  # type: ignore[call-arg]
+                        return self.want(objective, use_cache=use_cache, retries=retries - 1, _retrying=True)  # type: ignore[call-arg]
                     raise PlaysmartError(f"LLM failed to produce a valid Playwright selector. reason: {e}") from e
 
             return returns

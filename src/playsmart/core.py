@@ -6,8 +6,10 @@ import logging
 import os.path
 import typing
 from contextlib import contextmanager
+from os import environ
 from urllib.parse import urljoin, urlparse
 
+from httpx import HTTPError, RequestError
 from openai import DefaultHttpxClient, OpenAI, OpenAIError
 from playwright.sync_api import Error as PlaywrightError
 from playwright.sync_api import Locator, Page
@@ -166,12 +168,29 @@ class Playsmart:
 
         resources = []
 
-        with DefaultHttpxClient() as client:
-            for source in self._sources:
+        forced_input = environ.get("PLAYSMART_CACHE_PRESET", default=None)
+
+        if forced_input is not None:
+            for entry in forced_input.split(";"):
+                entry = entry.strip()
+
                 try:
-                    resources.append(client.get(source).raise_for_status().content)
-                except Exception:
+                    hostname, forced_tag = tuple(entry.split("="))
+                except ValueError:
                     continue
+
+                if self.host != hostname:
+                    continue
+
+                resources.append(forced_tag.encode())
+
+        if not resources:
+            with DefaultHttpxClient() as client:
+                for source in self._sources:
+                    try:
+                        resources.append(client.get(source).raise_for_status().content)
+                    except (RequestError, HTTPError):
+                        continue
 
         self._fingerprints[self.host] = hashlib.sha256(
             b"".join(resources),

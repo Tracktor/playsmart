@@ -102,6 +102,38 @@ def test_existing_cache_preload(playwright_page: MagicMock, cache_file: str) -> 
     assert len(res) == 1
 
 
+def test_cache_via_preset(playwright_page: MagicMock) -> None:
+    """We may need to enforce a cache key per hostname if our logic does not apply."""
+    from os import environ
+
+    environ["PLAYSMART_CACHE_PRESET"] = "example.tld=v1.22"
+
+    smart_playwright = Playsmart(
+        browser_tab=playwright_page,
+        openai_key="sk-fake123",
+        cache_path=".shouldnotexistafter",
+    )
+
+    #: should virtually be sha256(v1.22)
+    assert smart_playwright._fingerprint == "999db56e818ea6623b3459a9fca4b77114056a743e1ac250c204ff04973d5014"
+
+    del environ["PLAYSMART_CACHE_PRESET"]
+
+    #: still internally cached!
+    assert smart_playwright._fingerprint == "999db56e818ea6623b3459a9fca4b77114056a743e1ac250c204ff04973d5014"
+
+    #: no longer cache preset set!
+    smart_playwright = Playsmart(
+        browser_tab=playwright_page,
+        openai_key="sk-fake123",
+        cache_path=".shouldnotexistafter",
+    )
+
+    assert smart_playwright._fingerprint == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+    assert not exists(".shouldnotexistafter")
+
+
 @openai_mocker()
 def test_llm_went_south(openai_mock: OpenAIMock, playwright_page: MagicMock) -> None:
     """We should not expect the LLM to perfectly follow orders. Sometimes it just return garbage."""

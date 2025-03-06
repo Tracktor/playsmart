@@ -95,6 +95,17 @@ across your teams! Commit it!
 
 You may choose a filename at your own convenience via the `cache_path=...` parameter within the `Playsmart` class constructor.
 
+If your application does not have a stable content, you could be embarrassed by the ever invalidating cache.
+To remediate to this, set the following environment variable:
+
+```shell
+export PLAYSMART_CACHE_PRESET="example.com=v1.22"
+# or...
+export PLAYSMART_CACHE_PRESET="example.com=v1.22;example.org=v4.33"
+```
+
+This will actively prevent the cache to be invalidated.
+
 ### The 'want' method in a nutshell
 
 Basically, everything revolve around `Playsmart.want(...)` as you would have already guessed.

@@ -39,6 +39,9 @@ dependencies = [
     "playwright>=1,<2",
 ]
 
+[project.scripts]
+playsmart = "playsmart:__main__.cli"
+
 [tool.hatch.version]
 path = "src/playsmart/_version.py"
 

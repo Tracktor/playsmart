@@ -10,6 +10,9 @@ source =
     *\playsmart
 
 [report]
+omit =
+    src/playsmart/__main__.py
+
 exclude_lines =
     except ModuleNotFoundError:
     except ImportError:

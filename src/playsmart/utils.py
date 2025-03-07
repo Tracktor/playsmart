@@ -24,7 +24,9 @@ def extract_playwright_instruction(source: str) -> list[tuple[str, list[str]]]:
     #   first) method name
     #   second) arguments of the method
     # regardless of the originating variable
-    for raw_instruction in re.findall(r'\.([a-zA-Z_]\w*)\s*\(((?:[^()"]|"(?:\\.|[^"\\])*")*)\)', source):
+    for raw_instruction in re.findall(
+        r'\.([a-zA-Z_]\w*)\s*\(((?:[^()"]|"(?:\\.|[^"\\])*")*)\)', source.replace(".mouse.", ".mouse().")
+    ):
         page_method, method_arguments = raw_instruction
 
         # the args are in plain text
@@ -36,7 +38,7 @@ def extract_playwright_instruction(source: str) -> list[tuple[str, list[str]]]:
     return instructions
 
 
-def extract_python_arguments(source_arguments: str) -> list[str]:
+def extract_python_arguments(source_arguments: str) -> list[str | float]:
     """A smart way to parse a list of arguments from a raw source arguments.
 
     This function immediately complete the function extract_playwright_instruction.
@@ -61,7 +63,9 @@ def extract_python_arguments(source_arguments: str) -> list[str]:
             if (arg.startswith('"') and arg.endswith('"')) or (arg.startswith("'") and arg.endswith("'")):
                 arg = arg[1:-1]
             else:
-                pass  # todo: some args may be constants/int/float etc... find a way!
+                if re.match(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", arg):
+                    arg = float(arg)
+                # todo: maybe threat other cases like possible constants
 
             args.append(arg)
 

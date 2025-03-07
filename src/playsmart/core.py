@@ -12,7 +12,7 @@ from urllib.parse import urljoin, urlparse
 from httpx import HTTPError, RequestError
 from openai import DefaultHttpxClient, OpenAI, OpenAIError
 from playwright.sync_api import Error as PlaywrightError
-from playwright.sync_api import Locator, Page
+from playwright.sync_api import Locator, Mouse, Page
 
 from ._version import version
 from .constants import DEFAULT_CACHE_PATH, WORLD_PROMPT
@@ -30,9 +30,11 @@ def context_debug() -> typing.Generator[None]:  # Defensive: debugging purpose o
     explain_handler = logging.StreamHandler()
     explain_handler.setFormatter(logging.Formatter("%(asctime)s | %(levelname)s | %(message)s"))
     logger.addHandler(explain_handler)
-    yield
-    logger.setLevel(old_level)
-    logger.removeHandler(explain_handler)
+    try:
+        yield
+    finally:
+        logger.setLevel(old_level)
+        logger.removeHandler(explain_handler)
 
 
 class Playsmart:
@@ -266,7 +268,7 @@ Test Objective: {objective}
                 ],
             )
         except OpenAIError as e:
-            raise PlaysmartError("OpenAI LLM API call failed") from e
+            raise PlaysmartError(f"OpenAI LLM API call failed: {e}") from e
 
         prompt_response = openai_response.choices[0].message.content
 
@@ -307,6 +309,9 @@ Test Objective: {objective}
         If you, for example, want to list every field in the present page
         In that case, the method will return a list of "Locator".
         """
+        if _retrying is True:
+            logger.debug(f"Retrying '{objective}' {retries=}")
+
         response = self._prompt(objective, use_cache=use_cache, invalid_cache=_retrying)
 
         try:
@@ -343,25 +348,39 @@ Test Objective: {objective}
         else:
             instructions = extract_playwright_instruction(code)
 
-            returns = []
+            returns: list[Locator | Mouse] = []
 
             res = None
 
             for method, args in instructions:
                 if not hasattr(self._page, method) and not hasattr(res, method):
+                    if retries is not None and retries > 0:
+                        logger.warning(
+                            f"LLM probably hallucinated. Thought method '{method}' exist in Playwright 'page' methods !"
+                            f"Retrying! {retries - 1} retry left."
+                        )
+                        return self.want(objective, use_cache=use_cache, retries=retries - 1, _retrying=True)  # type: ignore[call-arg]
                     raise PlaysmartError(
                         f"LLM probably hallucinated. Thought method '{method}' exist in Playwright 'page' methods !"
                     )
 
                 try:
-                    root_callable: Page | Locator = self._page if res is None or not hasattr(res, method) else res
+                    root_callable: Page | Locator | Mouse = self._page if res is None or not hasattr(res, method) else res
 
                     if root_callable == self._page:
                         logger.debug(f"attempt to execute '{method}' with args: {args}")
                     else:
                         logger.debug(f"nested calls w/ '{method}' with args: {args}")
 
-                    res = getattr(root_callable, method)(*args)
+                    if method == "mouse":
+                        res = getattr(root_callable, "mouse")
+                    else:
+                        res = getattr(root_callable, method)(*args)
+
+                    #: we promised to return a list of Locator
+                    #: we kept the Mouse only for nested call
+                    if isinstance(root_callable, Mouse):
+                        returns.pop()
 
                     #: on ambiguous selectors, take first.
                     if hasattr(res, "count"):
@@ -372,8 +391,8 @@ Test Objective: {objective}
                             res = res.first
 
                     if res is not None:
-                        if hasattr(res, "page"):
-                            logger.debug("method returned a Locator, appending to results!")
+                        if hasattr(res, "page") or method == "mouse":
+                            logger.debug("method returned a Locator (or mouse), appending to results!")
                             returns.append(res)
                         else:
                             logger.debug(f"method returned something, but discarded: {res}")
@@ -388,4 +407,4 @@ Test Objective: {objective}
                         return self.want(objective, use_cache=use_cache, retries=retries - 1, _retrying=True)  # type: ignore[call-arg]
                     raise PlaysmartError(f"LLM failed to produce a valid Playwright selector. reason: {e}") from e
 
-            return returns
+            return returns  # type: ignore[return-value]

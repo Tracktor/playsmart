@@ -2,6 +2,15 @@
 All notable changes to charset-normalizer will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.2.0 (2025-03-07)
+
+### Fixed
+- Handling the case where the LLM hint us toward using the `mouse` property exposed by Playwright.
+
+### Added
+- A debug / companion CLI to effortlessly improve your tests. Run it by either `python -m playsmart` or simply `playsmart`
+  in your shell.
+
 ## 0.1.3 (2025-03-06)
 
 ### Fixed

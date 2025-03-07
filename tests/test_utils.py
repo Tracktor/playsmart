@@ -29,7 +29,7 @@ from playsmart.utils import extract_code_from_markdown, extract_playwright_instr
             ["arg0", "arg1", "arg2", 9988],
         ),
         (
-            'x=998, y=91982.11',
+            "x=998, y=91982.11",
             [998, 91982.11],
         ),
     ],

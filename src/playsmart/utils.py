@@ -68,7 +68,10 @@ def extract_python_arguments(source_arguments: str) -> list[str | float]:
                 # expect the order to match positional ones.
                 if "=" in arg:
                     maybe_key, maybe_arg = arg.split("=", maxsplit=1)
-                    if maybe_key.isalpha():
+                    if maybe_key.isalpha() and not (
+                        (maybe_arg.startswith('"') and maybe_arg.endswith('"'))
+                        or (maybe_arg.startswith("'") and maybe_arg.endswith("'"))
+                    ):
                         arg = maybe_arg
 
                 # anything from -50 to 50 or even +50

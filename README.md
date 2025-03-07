@@ -66,6 +66,33 @@ with smart_hub.context("docs page"):
     smart_hub.want("click on PEFT doc section")
 ```
 
+### Interactive playground!
+
+Don't want to start coding? Rather see it working via a CLI? We got you covered!
+
+Run `python -m playsmart` or directly `playsmart` to get a fast and friendly testing playground.
+
+Example:
+
+```shell
+playsmart -v https://github.com/
+```
+
+```
+usage: playsmart [-h] [-v] target
+
+Realtime LLM agent for interacting with web pages
+
+positional arguments:
+  target         Initial URL to get started
+
+options:
+  -h, --help     show this help message and exit
+  -v, --verbose  Enable advanced debugging
+```
+
+Don't forget to set `OPENAI_API_KEY` in your environment, or you will be prompted for it!
+
 ### OpenAI TPM Errors
 
 Did you get an error immediately?

@@ -63,6 +63,16 @@ def extract_python_arguments(source_arguments: str) -> list[str | float]:
             if (arg.startswith('"') and arg.endswith('"')) or (arg.startswith("'") and arg.endswith("'")):
                 arg = arg[1:-1]
             else:
+                # LLM might give us kwargs[...]
+                # awkward! let's assume we can roughly
+                # expect the order to match positional ones.
+                if "=" in arg:
+                    maybe_key, maybe_arg = arg.split("=", maxsplit=1)
+                    if maybe_key.isalpha():
+                        arg = maybe_arg
+
+                # anything from -50 to 50 or even +50
+                # catch int and float; positives or negatives!
                 if re.match(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", arg):
                     arg = float(arg)
                 # todo: maybe threat other cases like possible constants
@@ -70,3 +80,13 @@ def extract_python_arguments(source_arguments: str) -> list[str | float]:
             args.append(arg)
 
     return args
+
+
+if __name__ == "__main__":
+    print(
+        extract_playwright_instruction(
+            extract_code_from_markdown("```python\npage.locator(\"a[href='/Tracktor/playsmart']\").click()\n```")
+        )
+    )
+
+    print(extract_playwright_instruction(extract_code_from_markdown("```python\npage.locator(x=887.1, y=999).click()\n```")))

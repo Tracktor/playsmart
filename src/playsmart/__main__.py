@@ -1,22 +1,19 @@
 from __future__ import annotations
 
 import argparse
-from sys import argv
-from os import environ
 from getpass import getpass
+from os import environ
+from sys import argv
 
 from playwright.sync_api import sync_playwright
 
-from .core import Playsmart, context_debug
 from ._version import version
+from .core import Playsmart, context_debug
 from .exceptions import PlaysmartError
 
 
 def cli() -> None:
-    parser = argparse.ArgumentParser(
-        prog="playsmart",
-        description="Realtime LLM agent for interacting with web pages"
-    )
+    parser = argparse.ArgumentParser(prog="playsmart", description="Realtime LLM agent for interacting with web pages")
 
     parser.add_argument(
         "target",
@@ -35,15 +32,15 @@ def cli() -> None:
     args = parser.parse_args(argv[1:])
 
     print(
-        f"""
-      _____  _                                      _   
-     |  __ \| |             {version}                  | |  
-     | |__) | | __ _ _   _ ___ _ __ ___   __ _ _ __| |_ 
+        rf"""
+      _____  _                                      _
+     |  __ \| |             {version}                  | |
+     | |__) | | __ _ _   _ ___ _ __ ___   __ _ _ __| |_
      |  ___/| |/ _` | | | / __| '_ ` _ \ / _` | '__| __|
-     | |    | | (_| | |_| \__ | | | | | | (_| | |  | |_ 
+     | |    | | (_| | |_| \__ | | | | | | (_| | |  | |_
      |_|    |_|\__,_|\__, |___|_| |_| |_|\__,_|_|   \__|
-                      __/ |                             
-                     |___/                              
+                      __/ |
+                     |___/
     """
     )
 
@@ -55,7 +52,7 @@ def cli() -> None:
     openai_key = None
 
     if "OPENAI_API_KEY" not in environ:
-        openai_key = getpass(f"(Warning) Provide OpenAI API Key: ")
+        openai_key = getpass("(Warning) Provide OpenAI API Key: ")
 
         if not openai_key:
             exit(1)

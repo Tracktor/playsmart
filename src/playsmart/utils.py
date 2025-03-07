@@ -80,13 +80,3 @@ def extract_python_arguments(source_arguments: str) -> list[str | float]:
             args.append(arg)
 
     return args
-
-
-if __name__ == "__main__":
-    print(
-        extract_playwright_instruction(
-            extract_code_from_markdown("```python\npage.locator(\"a[href='/Tracktor/playsmart']\").click()\n```")
-        )
-    )
-
-    print(extract_playwright_instruction(extract_code_from_markdown("```python\npage.locator(x=887.1, y=999).click()\n```")))

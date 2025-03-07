@@ -47,6 +47,7 @@ def cli() -> None:
     print("!> Welcome to the playground")
     print("!> This will help you to quickly write tests")
     print("!> Prefix your prompt with '/f' to supress the cache")
+    print("!> Type '/c [context]' to set a specific context")
     print("!> You can manipulate the browser at will in between prompts!", end="\n\n")
 
     openai_key = None
@@ -78,9 +79,14 @@ def cli() -> None:
                 break
 
             need_bypass_cache: bool = prompt.startswith("/f")
+            want_context: bool = not need_bypass_cache and prompt.startswith("/c")
 
             if need_bypass_cache:
                 prompt = prompt[2:].strip()
+            elif want_context:
+                smart_hub._cursor = prompt[2:].strip()
+                print("(Ok) Context set")
+                continue
 
             if not prompt:
                 print("(Error) Invalid prompt")
@@ -99,6 +105,8 @@ def cli() -> None:
         except KeyboardInterrupt:
             print("(Goodbye!)")
             break
+
+    exit(0)
 
 
 if __name__ == "__main__":

@@ -37,6 +37,7 @@ dynamic = ["version"]
 dependencies = [
     "openai>=1,<2",
     "playwright>=1,<2",
+    "minify-html>=0.15,<1",
 ]
 
 [project.scripts]

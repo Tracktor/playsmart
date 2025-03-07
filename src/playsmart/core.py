@@ -9,6 +9,7 @@ from contextlib import contextmanager
 from os import environ
 from urllib.parse import urljoin, urlparse
 
+import minify_html
 from httpx import HTTPError, RequestError
 from openai import DefaultHttpxClient, OpenAI, OpenAIError
 from playwright.sync_api import Error as PlaywrightError
@@ -253,7 +254,7 @@ class Playsmart:
 
 DOM Content:
 ```html
-{self._page.content()}
+{minify_html.minify(self._page.content(), minify_js=True, keep_input_type_text_attr=True)}
 ```
 
 Test Objective: {objective}

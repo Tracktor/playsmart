@@ -6,6 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Parsing kwargs given by the LLM.
+- Processing large HTML DOM. Starting now, we minify the HTML to save tokens.
 
 ### Misc
 - Add command '/c' for setting a context in CLI.

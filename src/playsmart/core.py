@@ -384,7 +384,16 @@ Test Objective: {objective}
                         returns.pop()
 
                     #: on ambiguous selectors, take first.
-                    if hasattr(res, "count"):
+                    if hasattr(res, "count") and not isinstance(
+                        res,
+                        (
+                            str,
+                            int,
+                            float,
+                            bytes,
+                            bytearray,
+                        ),
+                    ):
                         # the isinstance is weird but needed
                         # case: MagicMock always return something!
                         if isinstance(res.count(), int) and res.count() > 1:
@@ -400,7 +409,7 @@ Test Objective: {objective}
                 except TypeError:
                     raise PlaysmartError(f"LLM probably hallucinated. Method '{method}' cannot accept given arguments: {args}")
                 except PlaywrightError as e:
-                    if "Unexpected token" in str(e) and retries is not None and retries > 0:
+                    if retries is not None and retries > 0:
                         logger.warning(
                             "LLM failed to produce a valid Playwright selector. "
                             f"Retrying! {retries - 1} retry left. Reason: {e}"

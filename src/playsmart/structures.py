@@ -14,6 +14,4 @@ class CacheObject(typing.TypedDict):
 class FieldDict(typing.TypedDict):
     """Struct to feed the LLM on how it should parse fields in DOM."""
 
-    name: str
     xpath: str
-    type: str

@@ -2,6 +2,15 @@
 All notable changes to charset-normalizer will be documented in this file. This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## 0.2.2 (2025-03-11)
+
+### Fixed
+- Parsing of Playwright selector having nested parenthesis in it.
+- Retry in case of Playwright timeout on elements/actions.
+
+### Changed
+- Improved overall (world) prompt performance by simplifying it.
+
 ## 0.2.1 (2025-03-07)
 
 ### Fixed

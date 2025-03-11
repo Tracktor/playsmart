@@ -73,6 +73,9 @@ select = [
     "I",  # isort
     "U",  # pyupgrade
 ]
+ignore = [
+    "UP038"
+]
 
 [tool.ruff.lint.isort]
 required-imports = ["from __future__ import annotations"]

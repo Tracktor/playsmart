@@ -86,6 +86,10 @@ def test_invalid_code_from_markdown(source: str) -> None:
             'page.locator("[name=\'password\']").fill("ksfFkfiFSjA")',
             [("locator", ["[name='password']"]), ("fill", ["ksfFkfiFSjA"])],
         ),
+        (
+            "page.locator(\"button:has-text('Commander')\").click()",
+            [("locator", ["button:has-text('Commander')"]), ("click", [])],
+        ),
     ],
 )
 def test_extract_playwright_instruction(source: str, expected_result: list[tuple[str, list[str]]]) -> None:

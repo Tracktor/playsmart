@@ -384,7 +384,16 @@ Test Objective: {objective}
                         returns.pop()
 
                     #: on ambiguous selectors, take first.
-                    if hasattr(res, "count"):
+                    if hasattr(res, "count") and not isinstance(
+                        res,
+                        (
+                            str,
+                            int,
+                            float,
+                            bytes,
+                            bytearray,
+                        ),
+                    ):
                         # the isinstance is weird but needed
                         # case: MagicMock always return something!
                         if isinstance(res.count(), int) and res.count() > 1:

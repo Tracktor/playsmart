@@ -400,7 +400,7 @@ Test Objective: {objective}
                 except TypeError:
                     raise PlaysmartError(f"LLM probably hallucinated. Method '{method}' cannot accept given arguments: {args}")
                 except PlaywrightError as e:
-                    if "Unexpected token" in str(e) and retries is not None and retries > 0:
+                    if retries is not None and retries > 0:
                         logger.warning(
                             "LLM failed to produce a valid Playwright selector. "
                             f"Retrying! {retries - 1} retry left. Reason: {e}"

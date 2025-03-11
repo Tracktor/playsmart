@@ -28,5 +28,6 @@ WORLD_PROMPT: typing.Final[
 - Dont use Playwright method 'evaluate'.
 - Never use loops in code, always prefer multiple Playwright redundant calls.
 - If I ask to locate for a single field, use Playwright locate method call.
+- If I start with "how many", use a single Playwright locator to answer.
 - Otherwise if I ask for fields send me a list of them with their xpath as json (in markdown) like given examples: {json.dumps(FIELDS)}
 """  # noqa: E501

@@ -21,4 +21,4 @@ repos:
   -   id: mypy
       args: [--check-untyped-defs]
       exclude: 'noxfile.py|tests/'
-      additional_dependencies: ["openai", "playwright", "minify_html"]
+      additional_dependencies: ["openai", "playwright", "minify_html", "beautifulsoup4"]

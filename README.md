@@ -6,6 +6,50 @@ Playwright! Playsmart!
 
 End the never ending game of having to manually record, inspect, and update your E2E tests with Playwright.
 
+https://github.com/user-attachments/assets/8e5602b7-341c-4dd7-b623-028a08a5a8e7
+
+<details>
+  <summary>🎮 <b>See the Playsmart code</b> for <i>the hacker news demo</i>!</summary>
+
+```python
+import time
+
+from playwright.sync_api import sync_playwright
+from playsmart import Playsmart
+
+
+if __name__ == "__main__":
+    driver = sync_playwright().start()
+    chrome = driver.chromium.launch(headless=False)
+    page = chrome.new_page()
+
+    page.goto("https://news.ycombinator.com/")
+    page.wait_for_load_state()
+
+    smart_hub = Playsmart(
+        browser_tab=page,
+    )
+
+    with smart_hub.context("home"):
+        res = smart_hub.want("how many news in the page?")
+
+        assert len(res)
+
+        print(f"There is {res[0].count()} news in the page!")
+
+        smart_hub.want("click on new")
+
+        smart_hub.want("click on discuss on the third item")
+
+    with smart_hub.context("news item"):
+        smart_hub.want("fill the comment input with a fake criticism")
+
+    time.sleep(5)
+
+```
+</details>
+
+
 This chunk of code[...]
 
 ```python

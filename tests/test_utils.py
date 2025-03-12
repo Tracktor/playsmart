@@ -2,7 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from playsmart.utils import extract_code_from_markdown, extract_playwright_instruction, extract_python_arguments
+from playsmart.utils import (
+    extract_code_from_markdown,
+    extract_playwright_instruction,
+    extract_python_arguments,
+    strip_needless_tags_for_llm,
+)
 
 
 @pytest.mark.parametrize(
@@ -94,3 +99,17 @@ def test_invalid_code_from_markdown(source: str) -> None:
 )
 def test_extract_playwright_instruction(source: str, expected_result: list[tuple[str, list[str]]]) -> None:
     assert extract_playwright_instruction(source) == expected_result
+
+
+@pytest.mark.parametrize(
+    "source, expected_result",
+    [
+        (
+            "<html><head><meta title=abc><title>xyz</title></head><body><h2>hello world</h2>"
+            "</body><script type=application/javascript>navigator.language='fr'</script></html>",
+            "<html><head><title>xyz</title></head><body><h2>hello world</h2></body></html>",
+        )
+    ],
+)
+def purify_html_from_tags(source: str, expected_result: str) -> None:
+    assert strip_needless_tags_for_llm(source) == expected_result

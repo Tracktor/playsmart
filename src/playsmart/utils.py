@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import re
 
+from bs4 import BeautifulSoup
+
 
 def extract_code_from_markdown(source: str, language: str = "python") -> str:
     """Retrieve the content of a source code embedded in a Markdown document."""
@@ -95,3 +97,15 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
             args.append(arg)
 
     return args
+
+
+def strip_needless_tags_for_llm(source: str) -> str:
+    """Remove most useless tags that won't be useful for our prompt. Wasting tokens at scale!"""
+
+    soup = BeautifulSoup(source, "html.parser")
+
+    for e in soup.find_all():
+        if hasattr(e, "name") and e.name in ["style", "link", "script", "path", "meta"]:
+            e.decompose()
+
+    return source

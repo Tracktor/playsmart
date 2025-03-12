@@ -19,7 +19,7 @@ from ._version import version
 from .constants import DEFAULT_CACHE_PATH, WORLD_PROMPT
 from .exceptions import PlaysmartError
 from .structures import CacheObject, FieldDict
-from .utils import extract_code_from_markdown, extract_playwright_instruction
+from .utils import extract_code_from_markdown, extract_playwright_instruction, strip_needless_tags_for_llm
 
 logger = logging.getLogger(__name__)
 
@@ -250,11 +250,20 @@ class Playsmart:
             f"requesting OpenAI LLM ({self._openai_model}) for context({self._cursor or 'generic'}) with objective: {objective}"
         )
 
+        # we, once purified, squeeze everything into the smallest size possible thanks to "minify_html".
+        purified_and_simplified_dom: str = minify_html.minify(
+            # first we remove known useless tags like script, link, meta and style embedding large qty of css, js or json.
+            # also Path, that contains a ton of svg coordinates[...]
+            strip_needless_tags_for_llm(self._page.content()),
+            minify_js=True,
+            keep_input_type_text_attr=True,
+        )
+
         prompt = f"""Analyzing end-to-end test scenario (sync playwright in python):
 
 DOM Content:
 ```html
-{minify_html.minify(self._page.content(), minify_js=True, keep_input_type_text_attr=True)}
+{purified_and_simplified_dom}
 ```
 
 Test Objective: {objective}
@@ -353,7 +362,7 @@ Test Objective: {objective}
 
             res = None
 
-            for method, args in instructions:
+            for idx, (method, args) in zip(range(0, len(instructions)), instructions):
                 if not hasattr(self._page, method) and not hasattr(res, method):
                     if retries is not None and retries > 0:
                         logger.warning(
@@ -383,16 +392,22 @@ Test Objective: {objective}
                     if isinstance(root_callable, Mouse):
                         returns.pop()
 
-                    #: on ambiguous selectors, take first.
-                    if hasattr(res, "count") and not isinstance(
-                        res,
-                        (
-                            str,
-                            int,
-                            float,
-                            bytes,
-                            bytearray,
-                        ),
+                    #: on ambiguous selectors, take first. unless next operation is count!
+                    next_method_is_count: bool = len(instructions) - 1 > idx and instructions[idx + 1][0] == "count"
+
+                    if (
+                        hasattr(res, "count")
+                        and not next_method_is_count
+                        and not isinstance(
+                            res,
+                            (
+                                str,
+                                int,
+                                float,
+                                bytes,
+                                bytearray,
+                            ),
+                        )
                     ):
                         # the isinstance is weird but needed
                         # case: MagicMock always return something!

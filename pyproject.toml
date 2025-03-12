@@ -38,6 +38,7 @@ dependencies = [
     "openai>=1,<2",
     "playwright>=1,<2",
     "minify-html>=0.15,<1",
+    "beautifulsoup4>=4.13,<5",
 ]
 
 [project.scripts]

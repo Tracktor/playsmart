@@ -56,47 +56,108 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
     In our attempt to parse the LLM response, we need to extract arguments and
     re-inject them later manually.
 
+    This function extracts arguments from a string and converts them to appropriate types.
+    It handles strings, integers, and floating point numbers, including those with units or symbols.
+
+    Arguments can be:
+    - Quoted strings: "example" or 'example'
+    - Numbers: 123, 45.67
+    - Numbers with units: "10km", "20$", "30°C", etc.
+    - Keyword arguments: key=value
+
     Support only str args for now.
+
+    Returns:
+        A list of parsed arguments with their appropriate types.
+
+    Examples:
+    >>> extract_python_arguments('"arg0", "arg1", "arg2"')
+    ['arg0', 'arg1', 'arg2']
+    >>> extract_python_arguments('"arg0", "arg1", arg2, 9988')
+    ['arg0', 'arg1', 'arg2', 9988]
+    >>> extract_python_arguments("x=998, y=91982.11")
+    [998, 91982.11]
+    >>> extract_python_arguments("'-99%', '3.14m'")
+    [-99, 3.14]
+    >>> extract_python_arguments('"price=499$, distance=10km"')
+    [499, 10]
     """
-    # Match either:
-    # - A quoted string (with escaped quotes allowed)
-    # - OR a sequence of non-comma characters
-    pattern = r'"((?:\\.|[^"\\])*?)"|\'((?:\\.|[^\'\\])*?)\'|([^,]+)'
+    # Split the arguments by comma, respecting quotes
+    # Example: '"arg0", "arg1", arg2' -> ['"arg0"', '"arg1"', 'arg2']
+    pattern = r',\s*(?=(?:[^"\']*["|\'][^"\']*["|\'])*[^"\']*$)'
+    args = re.split(pattern, source_arguments)
 
-    args = []
+    result = []
 
-    for match in re.finditer(pattern, source_arguments):
-        # The groups will be either quoted string or non-quoted content
-        quoted_double, quoted_single, non_quoted = match.groups()
-        arg = (quoted_double or quoted_single or non_quoted).strip()
-        if arg:  # Skip empty matches
-            # remove string quotes if any
-            if (arg.startswith('"') and arg.endswith('"')) or (arg.startswith("'") and arg.endswith("'")):
-                arg = arg[1:-1]
-            else:
-                # LLM might give us kwargs[...]
-                # awkward! let's assume we can roughly
-                # expect the order to match positional ones.
-                if "=" in arg:
-                    maybe_key, maybe_arg = arg.split("=", maxsplit=1)
-                    if maybe_key.isalpha() and not (
-                        (maybe_arg.startswith('"') and maybe_arg.endswith('"'))
-                        or (maybe_arg.startswith("'") and maybe_arg.endswith("'"))
-                    ):
-                        arg = maybe_arg
+    for arg in args:
+        arg = arg.strip()
 
-                # anything from -50 to 50 or even +50
-                # catch int and float; positives or negatives!
-                if re.match(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", arg):
-                    if "." in arg:
-                        arg = float(arg)
-                    else:
-                        arg = int(arg)
-                # todo: maybe threat other cases like possible constants
+        # Handle quoted strings: "example" or 'example'
+        if (arg.startswith('"') and arg.endswith('"')) or (arg.startswith("'") and arg.endswith("'")):
+            # Extract content within quotes
+            # Example: '"arg0"' -> 'arg0'
+            stripped_arg = arg[1:-1]
 
-            args.append(arg)
+            # Use the same regex to extract all numbers, whether from key-value pairs or strings with units
+            numbers = re.findall(r'[-+]?\d+(?:[.,]\d+)?', stripped_arg)
+            if numbers:
+                # If multiple numbers or if there's an '=' symbol, extract all numbers
+                # Example: "price=499$, distance=10km" -> [499, 10]
+                if len(numbers) > 1 or "=" in stripped_arg:
+                    for num in numbers:
+                        result.append(convert_to_number(num))
+                    continue
+                # If just one number at the beginning (case of numbers with units)
+                # Examples: "10km" -> 10, "20$" -> 20, "30°C" -> 30
+                elif re.match(r'^[-+]?\d', stripped_arg):
+                    result.append(convert_to_number(numbers[0]))
+                    continue
 
-    return args
+            # If not a number with unit, add as string
+            # Example: '"hello"' -> 'hello'
+            result.append(stripped_arg)
+            continue
+
+        # Handle keyword arguments (x=123 or x='abc')
+        # Examples: "x=998" -> 998, "x='abc'" -> 'abc'
+        if "=" in arg and not (arg.startswith('"') or arg.startswith("'")):
+            _, value = arg.split("=", 1)
+            value = value.strip()
+
+            # Check if value is quoted
+            # Example: "x='abc'" -> 'abc'
+            if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
+                result.append(value[1:-1])  # Add string value without quotes
+                continue
+
+            # Try to convert to number if not quoted
+            # Example: "x=998" -> 998
+            try:
+                result.append(convert_to_number(value))
+                continue
+            except ValueError:
+                pass
+
+        # Handle direct numbers or identifier strings
+        # Examples: "9988" -> 9988, "arg2" -> 'arg2'
+        try:
+            # Try to convert to a number first
+            # Example: "9988" -> 9988
+            result.append(convert_to_number(arg))
+        except ValueError:
+            # If not a number, keep as string
+            # Example: "arg2" -> 'arg2'
+            result.append(arg)
+
+    return result
+
+
+def convert_to_number(value: str) -> int | float:
+    """Convert a string to its appropriate numeric type (int or float)."""
+    value = value.replace(',', '.')
+    if '.' in value:
+        return float(value)
+    return int(value)
 
 
 def strip_needless_tags_for_llm(source: str) -> str:

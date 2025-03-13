@@ -99,7 +99,7 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
             stripped_arg = arg[1:-1]
 
             # Use the same regex to extract all numbers, whether from key-value pairs or strings with units
-            numbers = re.findall(r'[-+]?\d+(?:[.,]\d+)?', stripped_arg)
+            numbers = re.findall(r"[-+]?\d+(?:[.,]\d+)?", stripped_arg)
             if numbers:
                 # If multiple numbers or if there's an '=' symbol, extract all numbers
                 # Example: "price=499$, distance=10km" -> [499, 10]
@@ -109,7 +109,7 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
                     continue
                 # If just one number at the beginning (case of numbers with units)
                 # Examples: "10km" -> 10, "20$" -> 20, "30°C" -> 30
-                elif re.match(r'^[-+]?\d', stripped_arg):
+                elif re.match(r"^[-+]?\d", stripped_arg):
                     result.append(convert_to_number(numbers[0]))
                     continue
 
@@ -154,8 +154,8 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
 
 def convert_to_number(value: str) -> int | float:
     """Convert a string to its appropriate numeric type (int or float)."""
-    value = value.replace(',', '.')
-    if '.' in value:
+    value = value.replace(",", ".")
+    if "." in value:
         return float(value)
     return int(value)
 

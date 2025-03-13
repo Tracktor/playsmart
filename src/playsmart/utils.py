@@ -87,7 +87,7 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
     pattern = r',\s*(?=(?:[^"\']*["|\'][^"\']*["|\'])*[^"\']*$)'
     args = re.split(pattern, source_arguments)
 
-    result = []
+    result: list[str | float | int] = []
 
     for arg in args:
         arg = arg.strip()

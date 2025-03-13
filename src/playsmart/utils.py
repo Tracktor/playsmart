@@ -87,7 +87,7 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
     pattern = r',\s*(?=(?:[^"\']*["|\'][^"\']*["|\'])*[^"\']*$)'
     args = re.split(pattern, source_arguments)
 
-    result: list[str | float | int] = []
+    result = []
 
     for arg in args:
         arg = arg.strip()
@@ -99,7 +99,7 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
             stripped_arg = arg[1:-1]
 
             # Use the same regex to extract all numbers, whether from key-value pairs or strings with units
-            numbers = re.findall(r"[-+]?\d+(?:[.,]\d+)?", stripped_arg)
+            numbers = re.findall(r'[-+]?\d+(?:[.,]\d+)?', stripped_arg)
             if numbers:
                 # If multiple numbers or if there's an '=' symbol, extract all numbers
                 # Example: "price=499$, distance=10km" -> [499, 10]
@@ -109,13 +109,14 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
                     continue
                 # If just one number at the beginning (case of numbers with units)
                 # Examples: "10km" -> 10, "20$" -> 20, "30°C" -> 30
-                elif re.match(r"^[-+]?\d", stripped_arg):
+                elif re.match(r'^[-+]?\d', stripped_arg):
                     result.append(convert_to_number(numbers[0]))
                     continue
 
             # If not a number with unit, add as string
             # Example: '"hello"' -> 'hello'
-            result.append(stripped_arg)
+            if len(stripped_arg) > 0:
+                result.append(stripped_arg)
             continue
 
         # Handle keyword arguments (x=123 or x='abc')
@@ -127,7 +128,8 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
             # Check if value is quoted
             # Example: "x='abc'" -> 'abc'
             if (value.startswith('"') and value.endswith('"')) or (value.startswith("'") and value.endswith("'")):
-                result.append(value[1:-1])  # Add string value without quotes
+                if len(value[1:-1]) > 0:
+                    result.append(value[1:-1])  # Add string value without quotes
                 continue
 
             # Try to convert to number if not quoted
@@ -147,7 +149,8 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
         except ValueError:
             # If not a number, keep as string
             # Example: "arg2" -> 'arg2'
-            result.append(arg)
+            if len(arg) > 0:
+                result.append(arg)
 
     return result
 

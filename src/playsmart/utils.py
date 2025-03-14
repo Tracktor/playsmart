@@ -87,7 +87,7 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
 
                 # anything from -50 to 50 or even +50
                 # catch int and float; positives or negatives!
-                if re.match(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", arg):
+                if re.fullmatch(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", arg):
                     if "." in arg:
                         arg = float(arg)
                     else:
@@ -105,7 +105,17 @@ def strip_needless_tags_for_llm(source: str) -> str:
     soup = BeautifulSoup(source, "html.parser")
 
     for e in soup.find_all():
-        if hasattr(e, "name") and e.name in ["style", "link", "script", "path", "meta"]:
+        if hasattr(e, "name") and e.name in [
+            "style",
+            "link",
+            "script",
+            "path",
+            "meta",
+            "iframe",
+            "object",
+            "embed",
+            "noscript",
+        ]:
             e.decompose()
 
-    return source
+    return str(soup)

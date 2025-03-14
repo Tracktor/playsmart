@@ -259,14 +259,11 @@ class Playsmart:
             keep_input_type_text_attr=True,
         )
 
-        prompt = f"""Analyzing end-to-end test scenario (sync playwright in python):
-
-DOM Content:
-```html
+        prompt = f"""```html
 {purified_and_simplified_dom}
 ```
 
-Test Objective: {objective}
+Objective: {objective}
 """
 
         try:

@@ -359,7 +359,7 @@ Objective: {objective}
 
             res = None
 
-            for idx, (method, args) in zip(range(0, len(instructions)), instructions):
+            for idx, (method, (args, kwargs)) in zip(range(0, len(instructions)), instructions):
                 if not hasattr(self._page, method) and not hasattr(res, method):
                     if retries is not None and retries > 0:
                         logger.warning(
@@ -382,7 +382,7 @@ Objective: {objective}
                     if method == "mouse":
                         res = getattr(root_callable, "mouse")
                     else:
-                        res = getattr(root_callable, method)(*args)
+                        res = getattr(root_callable, method)(*args, **kwargs)
 
                     #: we promised to return a list of Locator
                     #: we kept the Mouse only for nested call

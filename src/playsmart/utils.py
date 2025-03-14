@@ -15,7 +15,9 @@ def extract_code_from_markdown(source: str, language: str = "python") -> str:
     return re.sub(r'(["\']#.*?["\'])', lambda e: f"'{re.sub(r'(?<!\\):', r'\\:', e.group(1).strip('\'"'))}'", match.group(1))
 
 
-def extract_playwright_instruction(source: str) -> list[tuple[str, list[str | float | int]]]:
+def extract_playwright_instruction(
+    source: str,
+) -> list[tuple[str, tuple[list[str | float | int], dict[str, str | float | int]]]]:
     """The LLM usually return a plain Python code with one or several instruction. This extracts them.
 
     Given a source code, find every call to a Playwright 'page' and extract for each the
@@ -49,7 +51,7 @@ def extract_playwright_instruction(source: str) -> list[tuple[str, list[str | fl
     return instructions
 
 
-def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
+def extract_python_arguments(source_arguments: str) -> tuple[list[str | float | int], dict[str, str | float | int]]:
     """A smart way to parse a list of arguments from a raw source arguments.
 
     This function immediately complete the function extract_playwright_instruction.
@@ -64,12 +66,15 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
     pattern = r'"((?:\\.|[^"\\])*?)"|\'((?:\\.|[^\'\\])*?)\'|([^,]+)'
 
     args = []
+    kwargs = {}
 
     for match in re.finditer(pattern, source_arguments):
         # The groups will be either quoted string or non-quoted content
         quoted_double, quoted_single, non_quoted = match.groups()
         arg = (quoted_double or quoted_single or non_quoted).strip()
         if arg:  # Skip empty matches
+            maybe_key: str | None = None
+
             # remove string quotes if any
             if (arg.startswith('"') and arg.endswith('"')) or (arg.startswith("'") and arg.endswith("'")):
                 arg = arg[1:-1]
@@ -77,26 +82,29 @@ def extract_python_arguments(source_arguments: str) -> list[str | float | int]:
                 # LLM might give us kwargs[...]
                 # awkward! let's assume we can roughly
                 # expect the order to match positional ones.
-                if "=" in arg:
-                    maybe_key, maybe_arg = arg.split("=", maxsplit=1)
-                    if maybe_key.isalpha() and not (
-                        (maybe_arg.startswith('"') and maybe_arg.endswith('"'))
-                        or (maybe_arg.startswith("'") and maybe_arg.endswith("'"))
-                    ):
-                        arg = maybe_arg
+                if non_quoted is not None:
+                    if "=" in arg:
+                        maybe_key, maybe_arg = arg.split("=", maxsplit=1)
+                        if maybe_key.isalpha() and not (
+                            (maybe_arg.startswith('"') and maybe_arg.endswith('"'))
+                            or (maybe_arg.startswith("'") and maybe_arg.endswith("'"))
+                        ):
+                            arg = maybe_arg
 
-                # anything from -50 to 50 or even +50
-                # catch int and float; positives or negatives!
-                if re.fullmatch(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", arg):
-                    if "." in arg:
-                        arg = float(arg)
-                    else:
-                        arg = int(arg)
-                # todo: maybe threat other cases like possible constants
+                    # anything from -50 to 50 or even +50
+                    # catch int and float; positives or negatives!
+                    if re.fullmatch(r"[-+]?(?:\d+(?:\.\d*)?|\.\d+)", arg):
+                        if "." in arg:
+                            arg = float(arg)
+                        else:
+                            arg = int(arg)
 
-            args.append(arg)
+            if maybe_key is None:
+                args.append(arg)
+            else:
+                kwargs[maybe_key] = arg
 
-    return args
+    return args, kwargs
 
 
 def strip_needless_tags_for_llm(source: str) -> str:

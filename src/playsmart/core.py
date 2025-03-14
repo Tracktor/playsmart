@@ -259,14 +259,11 @@ class Playsmart:
             keep_input_type_text_attr=True,
         )
 
-        prompt = f"""Analyzing end-to-end test scenario (sync playwright in python):
-
-DOM Content:
-```html
+        prompt = f"""```html
 {purified_and_simplified_dom}
 ```
 
-Test Objective: {objective}
+Objective: {objective}
 """
 
         try:
@@ -362,7 +359,7 @@ Test Objective: {objective}
 
             res = None
 
-            for idx, (method, args) in zip(range(0, len(instructions)), instructions):
+            for idx, (method, (args, kwargs)) in zip(range(0, len(instructions)), instructions):
                 if not hasattr(self._page, method) and not hasattr(res, method):
                     if retries is not None and retries > 0:
                         logger.warning(
@@ -385,7 +382,7 @@ Test Objective: {objective}
                     if method == "mouse":
                         res = getattr(root_callable, "mouse")
                     else:
-                        res = getattr(root_callable, method)(*args)
+                        res = getattr(root_callable, method)(*args, **kwargs)
 
                     #: we promised to return a list of Locator
                     #: we kept the Mouse only for nested call
